@@ -34,6 +34,7 @@ class Config:
     gmail_token_path: Path
     reply_prompt_path: Path
     processed_label_name: str
+    sender_domain_filter: str | None
     log_level: str
     dry_run: bool
 
@@ -95,6 +96,10 @@ def load_config(*, strict: bool = True) -> Config:
         processed_label_name=os.environ.get(
             "PROCESSED_LABEL_NAME", DEFAULT_LABEL_NAME
         ).strip(),
+        sender_domain_filter=(
+            os.environ.get("SENDER_DOMAIN_FILTER", "").strip().lstrip("@").lower()
+            or None
+        ),
         log_level=os.environ.get("LOG_LEVEL", DEFAULT_LOG_LEVEL).strip().upper(),
         dry_run=_env_bool("DRY_RUN", False),
     )
