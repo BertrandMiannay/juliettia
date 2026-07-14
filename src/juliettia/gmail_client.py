@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 SCOPES = [
     "https://www.googleapis.com/auth/gmail.readonly",
-    "https://www.googleapis.com/auth/gmail.labels",
+    "https://www.googleapis.com/auth/gmail.modify",
     "https://www.googleapis.com/auth/gmail.compose",
 ]
 
@@ -25,7 +25,9 @@ def run_auth_flow(config: Config) -> None:
     """Interactive, browser-based OAuth flow. Must be run on the host, not in Docker."""
     if not config.gmail_client_secret_path.is_file():
         raise FileNotFoundError(
-            f"Gmail client secret file not found: {config.gmail_client_secret_path}"
+            f"Gmail client secret file not found: {config.gmail_client_secret_path}\n"
+            "To get this file: Google Cloud Console → APIs & Services → Credentials "
+            "→ your OAuth 2.0 Desktop client → Download JSON → save at the path above."
         )
 
     flow = InstalledAppFlow.from_client_secrets_file(

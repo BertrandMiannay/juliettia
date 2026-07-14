@@ -4,7 +4,7 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from dotenv import load_dotenv
+from dotenv import find_dotenv, load_dotenv
 
 DEFAULT_MODEL = "mistral-large-latest"
 DEFAULT_CLIENT_SECRET_PATH = "credentials/client_secret.json"
@@ -53,7 +53,14 @@ def load_config(*, strict: bool = True) -> Config:
     used by the ``--auth-only`` flow, which only needs the Gmail credential
     paths and doesn't require a Mistral API key or target recipient yet.
     """
-    load_dotenv()
+    dotenv_path = find_dotenv(usecwd=True)
+    load_dotenv(dotenv_path)
+
+    project_root = Path(dotenv_path).parent if dotenv_path else Path.cwd()
+
+    def resolve(rel: str) -> Path:
+        p = Path(rel)
+        return p if p.is_absolute() else project_root / p
 
     mistral_api_key = os.environ.get("MISTRAL_API_KEY", "").strip()
     target_recipient_email = os.environ.get("TARGET_RECIPIENT_EMAIL", "").strip()
@@ -76,13 +83,13 @@ def load_config(*, strict: bool = True) -> Config:
         mistral_api_key=mistral_api_key,
         mistral_model=os.environ.get("MISTRAL_MODEL", DEFAULT_MODEL).strip(),
         target_recipient_email=target_recipient_email,
-        gmail_client_secret_path=Path(
+        gmail_client_secret_path=resolve(
             os.environ.get("GMAIL_CLIENT_SECRET_PATH", DEFAULT_CLIENT_SECRET_PATH)
         ),
-        gmail_token_path=Path(
+        gmail_token_path=resolve(
             os.environ.get("GMAIL_TOKEN_PATH", DEFAULT_TOKEN_PATH)
         ),
-        reply_prompt_path=Path(
+        reply_prompt_path=resolve(
             os.environ.get("REPLY_PROMPT_PATH", DEFAULT_PROMPT_PATH)
         ),
         processed_label_name=os.environ.get(
