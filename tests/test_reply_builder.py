@@ -9,6 +9,7 @@ from juliettia.reply_builder import (
     build_mime_reply,
     build_references,
     build_reply_subject,
+    resolve_reply_address,
 )
 
 
@@ -18,6 +19,7 @@ def make_email(**overrides) -> ParsedEmail:
         thread_id="thread-1",
         subject="Quarterly report",
         sender="Alice Example <alice@example.com>",
+        reply_to=None,
         rfc_message_id="<CA+abc123@mail.example.com>",
         references=None,
         date="Mon, 14 Jul 2026 09:00:00 +0000",
@@ -67,3 +69,28 @@ def test_build_mime_reply_raises_without_parseable_sender():
 
     with pytest.raises(ValueError):
         build_mime_reply(email, "Hello")
+
+
+def test_resolve_reply_address_prefers_reply_to_over_from():
+    email = make_email(
+        sender="Contact Form <no-reply@6244279.brevosend.com>",
+        reply_to="visitor@example.com",
+    )
+    assert resolve_reply_address(email) == "visitor@example.com"
+
+
+def test_resolve_reply_address_falls_back_to_sender_without_reply_to():
+    email = make_email(reply_to=None)
+    assert resolve_reply_address(email) == "alice@example.com"
+
+
+def test_build_mime_reply_targets_reply_to_address():
+    email = make_email(
+        sender="Contact Form <no-reply@6244279.brevosend.com>",
+        reply_to="visitor@example.com",
+    )
+
+    raw = build_mime_reply(email, "Merci pour votre message.")
+    decoded = base64.urlsafe_b64decode(raw).decode("utf-8")
+
+    assert "To: visitor@example.com" in decoded

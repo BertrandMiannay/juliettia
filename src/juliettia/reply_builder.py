@@ -34,13 +34,29 @@ def build_quoted_body(original: ParsedEmail, reply_text: str) -> str:
     return f"{reply_text}\n\n{header}\n{quoted_lines}"
 
 
-def build_mime_reply(original: ParsedEmail, reply_text: str) -> str:
+def resolve_reply_address(original: ParsedEmail) -> str:
+    """Return the address a reply should be sent to.
+
+    Prefers the ``Reply-To`` header over ``From``: transactional relays (e.g.
+    Brevo's contact-form forwarding) commonly send ``From`` a relay domain
+    like ``*.brevosend.com`` while ``Reply-To`` carries the real submitter's
+    address, mirroring what Gmail's own Reply button targets.
+    """
+    _, reply_to_addr = parseaddr(original.reply_to or "")
+    if reply_to_addr:
+        return reply_to_addr
+
     _, sender_addr = parseaddr(original.sender)
     if not sender_addr:
         raise ValueError(f"Could not parse a recipient address from: {original.sender!r}")
+    return sender_addr
+
+
+def build_mime_reply(original: ParsedEmail, reply_text: str) -> str:
+    reply_addr = resolve_reply_address(original)
 
     message = EmailMessage()
-    message["To"] = sender_addr
+    message["To"] = reply_addr
     message["Subject"] = build_reply_subject(original.subject)
 
     if original.rfc_message_id:

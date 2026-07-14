@@ -13,6 +13,7 @@ class ParsedEmail:
     thread_id: str
     subject: str
     sender: str
+    reply_to: str | None
     rfc_message_id: str | None
     references: str | None
     date: str | None
@@ -95,6 +96,7 @@ def parse_message(message: dict[str, Any]) -> ParsedEmail:
         thread_id=message["threadId"],
         subject=_get_header(headers, "Subject") or "(no subject)",
         sender=_get_header(headers, "From") or "",
+        reply_to=_get_header(headers, "Reply-To"),
         rfc_message_id=_get_header(headers, "Message-ID"),
         references=_get_header(headers, "References"),
         date=_get_header(headers, "Date"),

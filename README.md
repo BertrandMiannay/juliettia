@@ -17,7 +17,11 @@ external scheduler (cron, or a platform routine), not run as a daemon.
    `SENDER_DOMAIN_FILTER`).
 3. For each match: parse the email, call the Mistral API with your configured
    prompt, build a threaded MIME reply, create it as a Gmail draft, and apply
-   the `AI-Processed` label.
+   the `AI-Processed` label. The draft is addressed to the `Reply-To` header
+   when present, falling back to `From` otherwise — this matters for
+   transactional relays (e.g. Brevo contact-form forwarding), whose `From` is
+   a relay address like `*.brevosend.com` while `Reply-To` carries the actual
+   visitor's address, same as Gmail's own Reply button.
 4. Emails that already have a draft in their thread are skipped, and a failed
    email doesn't stop the batch — it's simply retried on the next run.
 

@@ -21,8 +21,20 @@ def test_parse_message_extracts_headers():
     assert email.thread_id == "18abc1234567800"
     assert email.subject == "Quarterly report"
     assert email.sender == "Alice Example <alice@example.com>"
+    assert email.reply_to is None
     assert email.rfc_message_id == "<CA+abc123@mail.example.com>"
     assert email.date == "Mon, 14 Jul 2026 09:00:00 +0000"
+
+
+def test_parse_message_extracts_reply_to_header():
+    message = load_fixture("sample_message.json")
+    message["payload"]["headers"].append(
+        {"name": "Reply-To", "value": "visitor@example.com"}
+    )
+
+    email = parse_message(message)
+
+    assert email.reply_to == "visitor@example.com"
 
 
 def test_parse_message_prefers_plain_text_body():
