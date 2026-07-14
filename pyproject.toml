@@ -1,0 +1,33 @@
+[project]
+name = "juliettia"
+version = "0.1.0"
+description = "AI agent for automated Gmail replies via Mistral"
+authors = [
+    {name = "Bertrand Miannay",email = "bertrandmiannay@gmail.com"}
+]
+license = "GPL-3.0-or-later"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "google-api-python-client (>=2.198.0,<3.0.0)",
+    "google-auth-oauthlib (>=1.4.0,<2.0.0)",
+    "google-auth-httplib2 (>=0.4.0,<0.5.0)",
+    "mistralai (>=2.6.0,<3.0.0)",
+    "python-dotenv (>=1.2.2,<2.0.0)"
+]
+
+[project.scripts]
+juliettia = "juliettia.main:main"
+
+[tool.poetry]
+packages = [{ include = "juliettia", from = "src" }]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "pytest (>=9.1.1,<10.0.0)",
+    "ruff (>=0.15.21,<0.16.0)"
+]

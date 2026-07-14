@@ -1,0 +1,14 @@
+# This file does NOT define a long-running service. juliettia is a one-shot
+# batch script meant to be triggered periodically by an external scheduler
+# (host cron, or this platform's routine/trigger system). Do not `docker
+# compose up` this file — invoke it as a one-off run instead:
+#
+#   docker compose run --rm juliettia
+#
+services:
+  juliettia:
+    build: .
+    env_file:
+      - .env
+    volumes:
+      - ./credentials:/app/credentials
