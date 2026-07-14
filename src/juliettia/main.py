@@ -86,7 +86,10 @@ def run(config: Config, dry_run: bool) -> int:
     label_id = gmail_client.ensure_label(service, config.processed_label_name)
 
     message_ids = gmail_client.search_unprocessed_message_ids(
-        service, config.target_recipient_email, config.processed_label_name
+        service,
+        config.target_recipient_email,
+        config.processed_label_name,
+        config.sender_domain_filter,
     )
     logger.info("Found %d message(s) to process", len(message_ids))
 

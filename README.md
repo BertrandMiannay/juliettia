@@ -13,7 +13,8 @@ external scheduler (cron, or a platform routine), not run as a daemon.
 
 1. Authenticate to Gmail via OAuth2 (read-only + labels + compose scopes).
 2. Search for unread emails addressed to `TARGET_RECIPIENT_EMAIL` that don't
-   already have the `AI-Processed` label.
+   already have the `AI-Processed` label (optionally restricted to senders on
+   `SENDER_DOMAIN_FILTER`).
 3. For each match: parse the email, call the Mistral API with your configured
    prompt, build a threaded MIME reply, create it as a Gmail draft, and apply
    the `AI-Processed` label.
@@ -50,6 +51,7 @@ Fill in `.env`:
 | `MISTRAL_API_KEY` | Your Mistral API key |
 | `MISTRAL_MODEL` | Model name (default: `mistral-large-latest`) |
 | `TARGET_RECIPIENT_EMAIL` | Only emails addressed to this address are processed |
+| `SENDER_DOMAIN_FILTER` | Optional. If set, only emails sent from this domain are processed (e.g. `brevosend.com` for a Brevo contact-form relay) |
 | `GMAIL_CLIENT_SECRET_PATH` | Path to the downloaded OAuth client secret JSON |
 | `GMAIL_TOKEN_PATH` | Where the OAuth token is stored after first auth |
 | `REPLY_PROMPT_PATH` | Path to the instruction prompt given to Mistral |
