@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+from email import message_from_bytes, policy
 
 import pytest
 
@@ -105,3 +106,18 @@ def test_build_mime_reply_targets_reply_to_address():
     decoded = base64.urlsafe_b64decode(raw).decode("utf-8")
 
     assert "To: visitor@example.com" in decoded
+
+
+def test_build_mime_reply_renders_markdown_as_html_alternative():
+    email = make_email()
+
+    raw = build_mime_reply(email, "This is **important**, please read it.")
+    message = message_from_bytes(base64.urlsafe_b64decode(raw), policy=policy.default)
+
+    assert message.get_content_type() == "multipart/alternative"
+
+    plain_part = message.get_body(("plain",))
+    html_part = message.get_body(("html",))
+
+    assert "**important**" in plain_part.get_content()
+    assert "<strong>important</strong>" in html_part.get_content()

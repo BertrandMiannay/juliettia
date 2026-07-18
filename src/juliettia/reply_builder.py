@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import base64
+import html
 import re
 from email.message import EmailMessage
 from email.utils import parseaddr
+
+import markdown
 
 from juliettia.email_parser import ParsedEmail
 
@@ -24,14 +27,32 @@ def build_references(original: ParsedEmail) -> str | None:
     return original.rfc_message_id
 
 
-def build_quoted_body(original: ParsedEmail, reply_text: str) -> str:
+def _attribution_header(original: ParsedEmail) -> str:
     sender_name, sender_addr = parseaddr(original.sender)
     attribution = sender_name or sender_addr or "the original sender"
+    if original.date:
+        return f"On {original.date}, {attribution} wrote:"
+    return f"{attribution} wrote:"
+
+
+def build_quoted_body(original: ParsedEmail, reply_text: str) -> str:
     quoted_lines = "\n".join(
         f"> {line}" for line in original.body.splitlines()
     )
-    header = f"On {original.date}, {attribution} wrote:" if original.date else f"{attribution} wrote:"
+    header = _attribution_header(original)
     return f"{reply_text}\n\n{header}\n{quoted_lines}"
+
+
+def build_html_body(original: ParsedEmail, reply_text: str) -> str:
+    reply_html = markdown.markdown(reply_text)
+    header = html.escape(_attribution_header(original))
+    quoted_html = html.escape(original.body).replace("\n", "<br>\n")
+    return (
+        f"{reply_html}\n"
+        f"<p>{header}</p>\n"
+        '<blockquote style="margin:0 0 0 .8ex;border-left:1px solid #ccc;'
+        f'padding-left:1ex">{quoted_html}</blockquote>'
+    )
 
 
 def resolve_reply_address(original: ParsedEmail) -> str:
@@ -72,6 +93,7 @@ def build_mime_reply(
         message["References"] = references
 
     message.set_content(build_quoted_body(original, reply_text))
+    message.add_alternative(build_html_body(original, reply_text), subtype="html")
 
     raw_bytes = message.as_bytes()
     return base64.urlsafe_b64encode(raw_bytes).decode("ascii")
