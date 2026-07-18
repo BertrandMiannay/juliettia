@@ -11,6 +11,7 @@ DEFAULT_CLIENT_SECRET_PATH = "credentials/client_secret.json"
 DEFAULT_TOKEN_PATH = "credentials/token.json"
 DEFAULT_PROMPT_PATH = "prompts/reply_instructions.txt"
 DEFAULT_LABEL_NAME = "AI-Processed"
+DEFAULT_SPAM_LABEL_NAME = "AI-Spam"
 DEFAULT_LOG_LEVEL = "INFO"
 
 
@@ -34,6 +35,7 @@ class Config:
     gmail_token_path: Path
     reply_prompt_path: Path
     processed_label_name: str
+    spam_label_name: str
     sender_domain_filter: str | None
     log_level: str
     dry_run: bool
@@ -95,6 +97,9 @@ def load_config(*, strict: bool = True) -> Config:
         ),
         processed_label_name=os.environ.get(
             "PROCESSED_LABEL_NAME", DEFAULT_LABEL_NAME
+        ).strip(),
+        spam_label_name=os.environ.get(
+            "SPAM_LABEL_NAME", DEFAULT_SPAM_LABEL_NAME
         ).strip(),
         sender_domain_filter=(
             os.environ.get("SENDER_DOMAIN_FILTER", "").strip().lstrip("@").lower()

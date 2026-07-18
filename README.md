@@ -21,7 +21,9 @@ external scheduler (cron, or a platform routine), not run as a daemon.
    when present, falling back to `From` otherwise — this matters for
    transactional relays (e.g. Brevo contact-form forwarding), whose `From` is
    a relay address like `*.brevosend.com` while `Reply-To` carries the actual
-   visitor's address, same as Gmail's own Reply button.
+   visitor's address, same as Gmail's own Reply button. If the Mistral API
+   classifies the email as spam, no draft is created; instead the message is
+   tagged with the `AI-Spam` label.
 4. Emails that already have a draft in their thread are skipped, and a failed
    email doesn't stop the batch — it's simply retried on the next run.
 
@@ -60,6 +62,7 @@ Fill in `.env`:
 | `GMAIL_TOKEN_PATH` | Where the OAuth token is stored after first auth |
 | `REPLY_PROMPT_PATH` | Path to the instruction prompt given to Mistral |
 | `PROCESSED_LABEL_NAME` | Gmail label used to mark processed emails (default: `AI-Processed`) |
+| `SPAM_LABEL_NAME` | Gmail label applied to emails the AI classifies as spam (default: `AI-Spam`) |
 | `LOG_LEVEL` | Python logging level (default: `INFO`) |
 | `DRY_RUN` | If `true`, generate replies but skip draft creation/labeling |
 

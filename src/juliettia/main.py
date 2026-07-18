@@ -43,7 +43,12 @@ def run_auth_only(config: Config) -> int:
 
 
 def process_message(
-    service, config: Config, label_id: str, message_id: str, dry_run: bool
+    service,
+    config: Config,
+    label_id: str,
+    spam_label_id: str,
+    message_id: str,
+    dry_run: bool,
 ) -> bool:
     message = gmail_client.get_message(service, message_id)
     email = parse_message(message)
@@ -64,8 +69,18 @@ def process_message(
     )
 
     if generated.classification == "spam":
+        if dry_run:
+            logger.info(
+                "[DRY RUN] Would label message %s as spam (subject=%r, sender=%s)",
+                email.gmail_id,
+                email.subject,
+                email.sender,
+            )
+            return True
+
+        gmail_client.apply_label(service, email.gmail_id, spam_label_id)
         logger.info(
-            "Skipping message %s: classified as spam (subject=%r, sender=%s)",
+            "Labeled message %s as spam (subject=%r, sender=%s)",
             email.gmail_id,
             email.subject,
             email.sender,
@@ -102,6 +117,7 @@ def run(config: Config, dry_run: bool) -> int:
     service = gmail_client.build_service(creds)
 
     label_id = gmail_client.ensure_label(service, config.processed_label_name)
+    spam_label_id = gmail_client.ensure_label(service, config.spam_label_name)
 
     message_ids = gmail_client.search_unprocessed_message_ids(
         service,
@@ -115,7 +131,9 @@ def run(config: Config, dry_run: bool) -> int:
     failed = 0
     for message_id in message_ids:
         try:
-            process_message(service, config, label_id, message_id, dry_run)
+            process_message(
+                service, config, label_id, spam_label_id, message_id, dry_run
+            )
             succeeded += 1
         except Exception:
             failed += 1
