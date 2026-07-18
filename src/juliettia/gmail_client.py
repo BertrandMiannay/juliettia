@@ -99,9 +99,13 @@ def search_unprocessed_message_ids(
     service: Resource,
     recipient_email: str,
     processed_label_name: str,
+    spam_label_name: str,
     sender_domain_filter: str | None = None,
 ) -> list[str]:
-    query = f"to:{recipient_email} is:unread -label:{processed_label_name}"
+    query = (
+        f"to:{recipient_email} is:unread "
+        f"-label:{processed_label_name} -label:{spam_label_name}"
+    )
     if sender_domain_filter:
         query += f" from:{sender_domain_filter}"
     message_ids: list[str] = []
