@@ -71,6 +71,17 @@ def test_build_mime_reply_raises_without_parseable_sender():
         build_mime_reply(email, "Hello")
 
 
+def test_build_mime_reply_uses_reply_addr_override():
+    email = make_email(reply_to="visitor@example.com")
+
+    raw = build_mime_reply(
+        email, "Merci.", reply_addr_override="president@touraine-plongee.org"
+    )
+    decoded = base64.urlsafe_b64decode(raw).decode("utf-8")
+
+    assert "To: president@touraine-plongee.org" in decoded
+
+
 def test_resolve_reply_address_prefers_reply_to_over_from():
     email = make_email(
         sender="Contact Form <no-reply@6244279.brevosend.com>",

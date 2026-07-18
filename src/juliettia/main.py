@@ -56,26 +56,44 @@ def process_message(
         )
         return True
 
-    reply_text = mistral_client.generate_reply(
+    generated = mistral_client.generate_reply(
         api_key=config.mistral_api_key,
         model=config.mistral_model,
         system_prompt=config.reply_instructions,
         email=email,
     )
 
-    if dry_run:
+    if generated.classification == "spam":
         logger.info(
-            "[DRY RUN] Would draft reply to %s (subject=%r):\n%s",
-            email.sender,
+            "Skipping message %s: classified as spam (subject=%r, sender=%s)",
+            email.gmail_id,
             email.subject,
-            reply_text,
+            email.sender,
         )
         return True
 
-    raw_reply = build_mime_reply(email, reply_text)
+    if dry_run:
+        logger.info(
+            "[DRY RUN] Would draft reply to %s (subject=%r, classification=%s, redirect_to=%s):\n%s",
+            email.sender,
+            email.subject,
+            generated.classification,
+            generated.redirect_to,
+            generated.reply_text,
+        )
+        return True
+
+    raw_reply = build_mime_reply(
+        email, generated.reply_text, reply_addr_override=generated.redirect_to
+    )
     gmail_client.create_draft(service, raw_reply, email.thread_id)
     gmail_client.apply_label(service, email.gmail_id, label_id)
-    logger.info("Created draft reply for message %s from %s", email.gmail_id, email.sender)
+    logger.info(
+        "Created draft reply for message %s from %s%s",
+        email.gmail_id,
+        email.sender,
+        f" (redirected to {generated.redirect_to})" if generated.redirect_to else "",
+    )
     return True
 
 

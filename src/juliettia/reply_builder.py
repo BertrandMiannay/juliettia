@@ -52,8 +52,13 @@ def resolve_reply_address(original: ParsedEmail) -> str:
     return sender_addr
 
 
-def build_mime_reply(original: ParsedEmail, reply_text: str) -> str:
-    reply_addr = resolve_reply_address(original)
+def build_mime_reply(
+    original: ParsedEmail,
+    reply_text: str,
+    *,
+    reply_addr_override: str | None = None,
+) -> str:
+    reply_addr = reply_addr_override or resolve_reply_address(original)
 
     message = EmailMessage()
     message["To"] = reply_addr
