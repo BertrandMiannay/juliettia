@@ -1,29 +1,53 @@
 from __future__ import annotations
 
-import json
-from dataclasses import dataclass
-
 from mistralai.client import Mistral
+from mistralai.extra import response_format_from_pydantic_model
+from pydantic import BaseModel, Field, ValidationError, field_validator
 
 from juliettia.email_parser import ParsedEmail
 
-_JSON_FORMAT_INSTRUCTIONS = (
-    "\n\n# Format de sortie\n"
-    "Réponds uniquement avec un objet JSON valide (sans markdown, sans texte hors JSON), "
-    "avec exactement ces clés :\n"
-    '- "reply_text" : la réponse rédigée, dans la même langue que le mail reçu.\n'
-    '- "classification" : une chaîne décrivant la nature du message, par exemple '
-    '"legitimate", "spam" ou "other".\n'
-    '- "redirect_to" : une adresse email vers laquelle rediriger la demande si elle '
-    "ne concerne pas le club ou nécessite un autre interlocuteur, sinon null."
-)
+
+class GeneratedReply(BaseModel):
+    reply_text: str = Field(
+        description="La réponse rédigée, dans la même langue que le mail reçu."
+    )
+    classification: str = Field(
+        default="legitimate",
+        description=(
+            "Une chaîne décrivant la nature du message, par exemple "
+            '"legitimate", "spam" ou "other".'
+        ),
+    )
+    redirect_to: str | None = Field(
+        default=None,
+        description=(
+            "Une adresse email vers laquelle rediriger la demande si elle ne "
+            "concerne pas le club ou nécessite un autre interlocuteur, sinon null."
+        ),
+    )
+
+    @field_validator("reply_text", mode="before")
+    @classmethod
+    def _require_non_empty_reply_text(cls, value: object) -> str:
+        text = str(value or "").strip()
+        if not text:
+            raise ValueError("reply_text must not be empty")
+        return text
+
+    @field_validator("classification", mode="before")
+    @classmethod
+    def _default_classification(cls, value: object) -> str:
+        return str(value or "").strip() or "legitimate"
+
+    @field_validator("redirect_to", mode="before")
+    @classmethod
+    def _normalize_redirect_to(cls, value: object) -> str | None:
+        if not value:
+            return None
+        return str(value).strip() or None
 
 
-@dataclass(frozen=True)
-class GeneratedReply:
-    reply_text: str
-    classification: str
-    redirect_to: str | None
+_RESPONSE_FORMAT = response_format_from_pydantic_model(GeneratedReply)
 
 
 def build_user_message(email: ParsedEmail) -> str:
@@ -35,30 +59,12 @@ def build_user_message(email: ParsedEmail) -> str:
 
 
 def _parse_generated_reply(content: str) -> GeneratedReply:
-    fallback = GeneratedReply(reply_text=content, classification="legitimate", redirect_to=None)
-
     try:
-        data = json.loads(content)
-    except (json.JSONDecodeError, TypeError):
-        return fallback
-
-    if not isinstance(data, dict):
-        return fallback
-
-    reply_text = str(data.get("reply_text") or "").strip()
-    if not reply_text:
-        return fallback
-
-    classification = str(data.get("classification") or "").strip() or "legitimate"
-
-    redirect_to_raw = data.get("redirect_to")
-    redirect_to = str(redirect_to_raw).strip() or None if redirect_to_raw else None
-
-    return GeneratedReply(
-        reply_text=reply_text,
-        classification=classification,
-        redirect_to=redirect_to,
-    )
+        return GeneratedReply.model_validate_json(content)
+    except ValidationError:
+        return GeneratedReply.model_construct(
+            reply_text=content, classification="legitimate", redirect_to=None
+        )
 
 
 def generate_reply(
@@ -72,9 +78,9 @@ def generate_reply(
 
     response = client.chat.complete(
         model=model,
-        response_format={"type": "json_object"},
+        response_format=_RESPONSE_FORMAT,
         messages=[
-            {"role": "system", "content": system_prompt + _JSON_FORMAT_INSTRUCTIONS},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": build_user_message(email)},
         ],
     )

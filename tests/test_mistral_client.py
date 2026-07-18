@@ -65,7 +65,9 @@ def test_generate_reply_parses_legitimate_json(monkeypatch):
         classification="legitimate",
         redirect_to=None,
     )
-    assert calls[0]["response_format"] == {"type": "json_object"}
+    assert calls[0]["response_format"] == mistral_client._RESPONSE_FORMAT
+    assert calls[0]["response_format"]["type"] == "json_schema"
+    assert calls[0]["response_format"]["json_schema"]["name"] == "GeneratedReply"
 
 
 def test_generate_reply_parses_spam_classification(monkeypatch):
@@ -141,7 +143,7 @@ def test_generate_reply_merges_list_content_chunks(monkeypatch):
     assert result.reply_text == "Réponse assemblée."
 
 
-def test_generate_reply_appends_format_instructions_to_system_prompt(monkeypatch):
+def test_generate_reply_sends_system_prompt_unchanged(monkeypatch):
     calls: list = []
     content = json.dumps(
         {"reply_text": "ok", "classification": "legitimate", "redirect_to": None}
@@ -151,5 +153,4 @@ def test_generate_reply_appends_format_instructions_to_system_prompt(monkeypatch
     call_generate_reply(system_prompt="Be nice.")
 
     system_message = calls[0]["messages"][0]["content"]
-    assert "Be nice." in system_message
-    assert "Format de sortie" in system_message
+    assert system_message == "Be nice."
