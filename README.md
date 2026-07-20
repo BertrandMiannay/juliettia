@@ -103,31 +103,46 @@ poetry run juliettia
 
 ## Running with Docker
 
-Build the image:
+### Pre-built image (recommended for production)
+
+Every push to `main` builds the image and publishes it to GitHub Container
+Registry via [`.github/workflows/docker-publish.yml`](.github/workflows/docker-publish.yml)
+as `ghcr.io/bertrandmiannay/juliettia:latest`. The package is public, so no
+login is required to pull it — this is what a production host (e.g. the OVH
+cron server) should use, so it never needs Poetry, Python, or a local build
+step at all:
+
+```bash
+docker pull ghcr.io/bertrandmiannay/juliettia:latest
+
+docker run --rm \
+  --env-file .env \
+  -v "$(pwd)/credentials:/app/credentials" \
+  ghcr.io/bertrandmiannay/juliettia:latest
+```
+
+### Building locally (development)
 
 ```bash
 docker build -t juliettia .
-```
 
-Run one batch (the container exits after one pass, like the script itself):
-
-```bash
 docker run --rm \
   --env-file .env \
   -v "$(pwd)/credentials:/app/credentials" \
   juliettia
 ```
 
-The `credentials/` volume mount is required: it lets the container read
-`client_secret.json`/`token.json` and write back the refreshed token so you
-don't have to re-authenticate on every run. Secrets are only ever passed at
-runtime (`--env-file`, volume mount) — never baked into the image.
+The `credentials/` volume mount is required in both cases: it lets the
+container read `client_secret.json`/`token.json` and write back the
+refreshed token so you don't have to re-authenticate on every run. Secrets
+are only ever passed at runtime (`--env-file`, volume mount) — never baked
+into the image.
 
 `--auth-only` must be run on the host beforehand (see step 3); it will not
 work inside the container since there's no browser available.
 
-A `docker-compose.yml` is provided as a convenience wrapper for the same
-invocation:
+A `docker-compose.yml` is provided as a convenience wrapper for a local
+build:
 
 ```bash
 docker compose run --rm juliettia
@@ -139,14 +154,21 @@ Note this project is **not** meant to run as a long-lived service — don't
 ## Scheduling
 
 Trigger the container periodically with a host cron entry, for example every
-5 minutes:
+5 minutes. Pulling before each run picks up whatever was last published to
+GHCR — if nothing changed since the last pull, this is a fast no-op:
 
 ```cron
-*/5 * * * * cd /path/to/juliettia && docker run --rm --env-file .env -v "$(pwd)/credentials:/app/credentials" juliettia >> /var/log/juliettia.log 2>&1
+*/5 * * * * cd /path/to/juliettia && docker pull ghcr.io/bertrandmiannay/juliettia:latest && docker run --rm --env-file .env -v "$(pwd)/credentials:/app/credentials" ghcr.io/bertrandmiannay/juliettia:latest >> /var/log/juliettia.log 2>&1
 ```
 
-Or point your scheduler/routine system at the same `docker run` (or
-`docker compose run --rm juliettia`) command.
+Or point your scheduler/routine system at the same `docker pull && docker
+run` (or a locally built `docker compose run --rm juliettia`) command.
+
+Deployment is otherwise fully automated: pushing to `main` (e.g. merging a
+PR) rebuilds and republishes the image, and the next cron tick on the server
+picks it up automatically. There is no separate deploy or restart step, and
+the server never needs Python, Poetry, or the source checked out — only
+Docker, `.env`, and `credentials/`.
 
 ## Development
 
