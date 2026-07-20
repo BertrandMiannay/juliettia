@@ -105,9 +105,11 @@ poetry run juliettia
 
 ### Pre-built image (recommended for production)
 
-Every push to `main` builds the image and publishes it to GitHub Container
-Registry via [`.github/workflows/docker-publish.yml`](.github/workflows/docker-publish.yml)
-as `ghcr.io/bertrandmiannay/juliettia:latest`. The package is public, so no
+The [`docker-publish`](.github/workflows/docker-publish.yml) GitHub Actions
+workflow builds the image and publishes it to GitHub Container Registry as
+`ghcr.io/bertrandmiannay/juliettia:latest`. It's manually triggered — go to
+**Actions → Publish Docker image → Run workflow** on the branch you want to
+publish (normally after merging to `main`). The package is public, so no
 login is required to pull it — this is what a production host (e.g. the OVH
 cron server) should use, so it never needs Poetry, Python, or a local build
 step at all:
@@ -164,11 +166,11 @@ GHCR — if nothing changed since the last pull, this is a fast no-op:
 Or point your scheduler/routine system at the same `docker pull && docker
 run` (or a locally built `docker compose run --rm juliettia`) command.
 
-Deployment is otherwise fully automated: pushing to `main` (e.g. merging a
-PR) rebuilds and republishes the image, and the next cron tick on the server
-picks it up automatically. There is no separate deploy or restart step, and
-the server never needs Python, Poetry, or the source checked out — only
-Docker, `.env`, and `credentials/`.
+Deployment is otherwise hands-off once published: running the
+`docker-publish` workflow republishes the image, and the next cron tick on
+the server picks it up automatically. There is no separate deploy or
+restart step, and the server never needs Python, Poetry, or the source
+checked out — only Docker, `.env`, and `credentials/`.
 
 ## Development
 
