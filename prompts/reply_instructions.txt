@@ -20,6 +20,7 @@ contact@touraine-plongee.org"
 - les niveaux se préparent au long de l'année, il n'y a pas de stage intensif par exemple
 - Les tarifs sont consultables ici : https://touraine-plongee.org/w/formule-d-adhesion-et-tarifs
 - Nous acceptons les jeunes à partir de 12 ans
+- Les inscriptions commenceront début août pour les anciens adhérents et mi-aout pour les nouveaux adhérents
 
 # Exemple d'email : 
 Bonjour XXXX
