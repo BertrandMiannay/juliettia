@@ -121,3 +121,22 @@ def test_build_mime_reply_renders_markdown_as_html_alternative():
 
     assert "**important**" in plain_part.get_content()
     assert "<strong>important</strong>" in html_part.get_content()
+
+
+def test_build_mime_reply_renders_bullet_list_as_html_list():
+    email = make_email()
+
+    reply_text = (
+        "Voici les créneaux :\n\n"
+        "- Le mardi : 20h-22h\n"
+        "- Le vendredi : 20h-22h"
+    )
+    raw = build_mime_reply(email, reply_text)
+    message = message_from_bytes(base64.urlsafe_b64decode(raw), policy=policy.default)
+
+    html_part = message.get_body(("html",))
+    html_content = html_part.get_content()
+
+    assert "<ul>" in html_content
+    assert "<li>Le mardi : 20h-22h</li>" in html_content
+    assert "<li>Le vendredi : 20h-22h</li>" in html_content
