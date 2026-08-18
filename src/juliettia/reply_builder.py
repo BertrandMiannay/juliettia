@@ -44,7 +44,7 @@ def build_quoted_body(original: ParsedEmail, reply_text: str) -> str:
 
 
 def build_html_body(original: ParsedEmail, reply_text: str) -> str:
-    reply_html = markdown.markdown(reply_text)
+    reply_html = markdown.markdown(reply_text, extensions=["sane_lists", "nl2br"])
     header = html.escape(_attribution_header(original))
     quoted_html = html.escape(original.body).replace("\n", "<br>\n")
     return (
